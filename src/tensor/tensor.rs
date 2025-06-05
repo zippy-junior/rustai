@@ -1,6 +1,7 @@
 use std::ops;
 
 #[derive(Debug)]
+#[derive(Clone, Copy)]
 pub struct Tensor<T, const ROWS: usize, const COLS: usize> {
     data: [[T; COLS]; ROWS]
 }
@@ -64,7 +65,6 @@ where
                 let mut sum = T::default();
                 for k in 0..RH_ROWS {
                     sum = sum + (self.data[i][k] * rhs.data[k][j]);
-                    dbg!(sum);
                 }
                 result.data[i][j] = sum;
             }
