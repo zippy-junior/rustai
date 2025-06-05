@@ -1,0 +1,9 @@
+solid name
+
+facet normal ni nj nk
+    outer loop
+        vertex v1x v1y v1z
+        vertex v2x v2y v2z
+        vertex v3x v3y v3z
+    endloop
+endfacet
