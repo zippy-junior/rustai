@@ -102,6 +102,17 @@ impl<T, const ROWS: usize, const COLS: usize> Tensor<T, ROWS, COLS> {
 
         result
     }
+
+    pub fn apply<F>(&mut self, func: F)
+    where
+        F: Fn(&T) -> T
+    {
+        for i in 0..ROWS {
+            for j in 0..COLS {
+                self.data[i][j] = func(&self.data[i][j])
+            }
+        }
+    }
 }
 
 impl<T, const ROWS: usize, const COLS: usize> ops::Add for Tensor<T, ROWS, COLS>
