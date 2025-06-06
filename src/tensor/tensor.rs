@@ -1,5 +1,7 @@
 use std::ops;
 
+use crate::tensor;
+
 #[derive(Debug)]
 #[derive(Clone, Copy)]
 pub struct Tensor<T, const ROWS: usize, const COLS: usize> {
@@ -23,6 +25,32 @@ impl<T, const ROWS: usize, const COLS: usize> Tensor<T, ROWS, COLS> {
         Tensor {
             data: [[val; COLS]; ROWS]
         }
+    }
+
+    pub fn dot(self, rhs: Tensor<T, COLS, 1>) -> T
+    where 
+        T: Default + ops::Mul<Output = T> + ops::Add<Output = T> + Copy
+    {
+        let mut res: T = T::default();
+        for i in 0..COLS {
+            res = res + (self.data[0][i] * rhs.data[i][0])
+        }
+        res
+    }
+
+    pub fn transpose(self) -> Tensor<T, COLS, ROWS>
+    where 
+        T: Default + Copy
+    {
+        let mut res: Tensor<T, COLS, ROWS> = Tensor::new();
+
+        for i in 0..COLS {
+            for j in 0..ROWS {
+            res.data[i][j] = self.data[j][i];
+            }
+        }
+
+        res
     }
 }
 
