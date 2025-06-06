@@ -1,4 +1,5 @@
 use std::ops;
+use rand;
 
 
 #[derive(Debug)]
@@ -35,6 +36,16 @@ impl<T, const ROWS: usize, const COLS: usize> Tensor<T, ROWS, COLS> {
         }
     }
 
+    pub fn rand_fill() -> Self 
+    where
+        T: Copy,
+        rand::distr::StandardUniform: rand::distr::Distribution<T>,
+    {
+        Tensor {
+            data: [[rand::random::<T>(); COLS]; ROWS]
+        }
+    }
+
     pub fn dot(self, rhs: Tensor<T, COLS, 1>) -> T
     where 
         T: Default + ops::Mul<Output = T> + ops::Add<Output = T> + Copy
@@ -59,6 +70,37 @@ impl<T, const ROWS: usize, const COLS: usize> Tensor<T, ROWS, COLS> {
         }
 
         res
+    }
+
+    pub fn broadcast<const T_ROWS: usize, const T_COLS: usize>(&self) -> Tensor<T, T_ROWS, T_COLS>
+    where
+        T: Copy,
+    {
+        // Check broadcasting rules
+        assert!(
+            ROWS == T_ROWS || ROWS == 1,
+            "Row dimension must match or be 1 for broadcasting"
+        );
+        assert!(
+            COLS == T_COLS || COLS == 1,
+            "Column dimension must match or be 1 for broadcasting"
+        );
+
+        let mut result = Tensor {
+            data: [[self.data[0][0]; T_COLS]; T_ROWS],
+        };
+
+        for i in 0..T_ROWS {
+            for j in 0..T_COLS {
+                // Determine source indices with broadcasting rules
+                let src_i = if ROWS == 1 { 0 } else { i };
+                let src_j = if COLS == 1 { 0 } else { j };
+                
+                result.data[i][j] = self.data[src_i][src_j].clone();
+            }
+        }
+
+        result
     }
 }
 
