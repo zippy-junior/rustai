@@ -1,6 +1,5 @@
 use std::ops;
 
-use crate::tensor;
 
 #[derive(Debug)]
 #[derive(Clone, Copy)]
@@ -15,6 +14,15 @@ impl<T, const ROWS: usize, const COLS: usize> Tensor<T, ROWS, COLS> {
     {
         Tensor {
             data: [[T::default(); COLS]; ROWS]
+        }
+    }
+
+    pub fn from_data(data: [[T; COLS]; ROWS]) -> Self
+    where
+        T: Default + Copy,
+    {
+        Tensor {
+            data: data
         }
     }
 
