@@ -14,23 +14,23 @@ pub enum Axis {
 }
 
 #[derive(Debug)]
-pub enum AxisSum<T, const ROWS: usize, const COLS: usize> {
+pub enum AxisRes<T, const ROWS: usize, const COLS: usize> {
     Row(Tensor<T, ROWS, 1>),
     Col(Tensor<T, 1, COLS>)
 }
 
-impl<T, const ROWS: usize, const COLS: usize> AxisSum<T, ROWS, COLS> {
+impl<T, const ROWS: usize, const COLS: usize> AxisRes<T, ROWS, COLS> {
     pub fn unwrap_row(self) -> Tensor<T, ROWS, 1> {
         match self {
-            AxisSum::Row(tensor) => tensor,
-            _ => panic!("Called unwrap_row on AxisSum::Col"),
+            AxisRes::Row(tensor) => tensor,
+            _ => panic!("Called unwrap_row on AxisRes::Col"),
         }
     }
     
     pub fn unwrap_col(self) -> Tensor<T, 1, COLS> {
         match self {
-            AxisSum::Col(tensor) => tensor,
-            _ => panic!("Called unwrap_col on AxisSum::Row"),
+            AxisRes::Col(tensor) => tensor,
+            _ => panic!("Called unwrap_col on AxisRes::Row"),
         }
     }
 }
@@ -148,7 +148,7 @@ impl<T, const ROWS: usize, const COLS: usize> Tensor<T, ROWS, COLS> {
         self.data.iter().flatten().copied().sum()
     }
     
-    pub fn sum_axis(&self, axis: Axis) -> AxisSum<T, ROWS, COLS> 
+    pub fn sum_axis(&self, axis: Axis) -> AxisRes<T, ROWS, COLS> 
     where 
         T: Default + Copy + std::ops::Add<Output = T>
     {
@@ -163,7 +163,7 @@ impl<T, const ROWS: usize, const COLS: usize> Tensor<T, ROWS, COLS> {
                     }
                     result.data[i][0] = sum;
                 }
-                AxisSum::Row(result)
+                AxisRes::Row(result)
             }
             Axis::Col => {
                 // Sum each column (result will be row vector)
@@ -175,7 +175,56 @@ impl<T, const ROWS: usize, const COLS: usize> Tensor<T, ROWS, COLS> {
                     }
                     result.data[0][j] = sum;
                 }
-                AxisSum::Col(result)
+                AxisRes::Col(result)
+            }
+        }
+    }
+
+    pub fn max(&self) -> T 
+    where 
+        T: Default + std::cmp::PartialOrd + Copy
+    {
+        let mut max_res: T = self.data[0][0];
+        for i in 0..ROWS {
+            for j in 0..COLS {
+                if self.data[i][j] > max_res {
+                    max_res = self.data[i][j];
+                } else { 
+                    continue;
+                }
+            }
+        }
+        max_res
+    }
+
+    pub fn max_axis(&self, axis: Axis) -> AxisRes<T, ROWS, COLS> 
+    where 
+        T: Default + Copy + std::ops::Add<Output = T>
+    {
+        match axis {
+            Axis::Row => {
+                // Sum each row (result will be column vector)
+                let mut result = Tensor::<T, ROWS, 1>::new();
+                for i in 0..ROWS {
+                    let mut sum = T::default();
+                    for j in 0..COLS {
+                        sum = sum + self.data[i][j];
+                    }
+                    result.data[i][0] = sum;
+                }
+                AxisRes::Row(result)
+            }
+            Axis::Col => {
+                // Sum each column (result will be row vector)
+                let mut result = Tensor::<T, 1, COLS>::new();
+                for j in 0..COLS {
+                    let mut sum = T::default();
+                    for i in 0..ROWS {
+                        sum = sum + self.data[i][j];
+                    }
+                    result.data[0][j] = sum;
+                }
+                AxisRes::Col(result)
             }
         }
     }
@@ -214,6 +263,46 @@ where
         for i in 0..ROWS {
             for j in 0..COLS {
                 result.data[i][j] = result.data[i][j] + scalar;
+            }
+        }
+        
+        result
+    }
+}
+
+impl<T, const ROWS: usize, const COLS: usize> ops::Sub for Tensor<T, ROWS, COLS>
+where
+    T: ops::Sub<Output = T> + Copy,  // Element type must support addition and be copyable
+{
+    type Output = Self;  // Result of addition is another Tensor with same dimensions
+
+    fn sub(self, rhs: Self) -> Tensor<T, ROWS, COLS> {
+        let mut result = self;  // Copy self (requires T: Copy)
+        
+        // Element-wise addition
+        for i in 0..ROWS {
+            for j in 0..COLS {
+                result.data[i][j] = result.data[i][j] - rhs.data[i][j];
+            }
+        }
+        
+        result
+    }
+}
+
+impl<T, const ROWS: usize, const COLS: usize> ops::Sub<T> for Tensor<T, ROWS, COLS>
+where
+    T: ops::Sub<Output = T> + Copy,  // Element type must support addition and be copyable
+{
+    type Output = Self;  // Result of addition is another Tensor with same dimensions
+
+    fn sub(self, scalar: T) -> Tensor<T, ROWS, COLS> {
+        let mut result = self;  // Copy self (requires T: Copy)
+        
+        // Element-wise addition
+        for i in 0..ROWS {
+            for j in 0..COLS {
+                result.data[i][j] = result.data[i][j] - scalar;
             }
         }
         
