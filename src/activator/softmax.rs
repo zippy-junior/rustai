@@ -10,7 +10,7 @@ impl<const N_INPUTS: usize, const BATCH_SIZE: usize> super::Activator<BATCH_SIZE
         let mut res = inputs.clone();
         let max_col = res.max_axis(Axis::Row).unwrap_row();
         res = res - max_col.broadcast::<BATCH_SIZE, N_INPUTS>();
-        res.apply(|el| { E ** el });
+        res.apply(|el| { E.powf(*el) });
         let exp_sum = res.sum_axis(Axis::Row).unwrap_row();
         res / exp_sum.broadcast::<BATCH_SIZE, N_INPUTS>()
     }

@@ -228,6 +228,76 @@ impl<T, const ROWS: usize, const COLS: usize> Tensor<T, ROWS, COLS> {
             }
         }
     }
+    pub fn any<F>(&self, axis: Axis, mut f: F) -> AxisRes<bool, ROWS, COLS> 
+    where
+        F: FnMut(&T) -> bool,
+        T: Default + Copy
+    {
+            match axis {
+            Axis::Row => {
+                let mut any_row = Tensor::<bool, ROWS, 1>::new();
+                for i in 0..ROWS {
+                    let mut row: bool = false;
+                    for j in 0..COLS {
+                        if f(&self.data[i][j]) {
+                            row = true;
+                        }
+                    }
+                    any_row.data[i] = [row];    
+                }
+                AxisRes::Row(any_row)
+            }
+            Axis::Col => {
+                let transposed = self.transpose();
+                let mut any_col = Tensor::<bool, 1, COLS>::new();
+                for j in 0..COLS {
+                    let mut col: bool = false;
+                    for i in 0..ROWS {
+                        if f(&transposed.data[j][i]) {
+                            col = true;
+                        }
+                    }
+                    any_col.data[0][j] = col;    
+                }
+                AxisRes::Col(any_col)
+            }
+        }
+    }
+    pub fn all<F>(&self, axis: Axis, mut f: F) -> AxisRes<bool, ROWS, COLS> 
+    where
+        F: FnMut(&T) -> bool,
+        T: Default + Copy
+    {
+            match axis {
+            Axis::Row => {
+                let mut any_row = Tensor::<bool, ROWS, 1>::new();
+                for i in 0..ROWS {
+                    let mut row: bool = true;
+                    for j in 0..COLS {
+                        if !f(&self.data[i][j]) {
+                            row = false;
+                        }
+                    }
+                    any_row.data[i] = [row];    
+                }
+                AxisRes::Row(any_row)
+            }
+            Axis::Col => {
+                let transposed = self.transpose();
+                let mut any_col = Tensor::<bool, 1, COLS>::new();
+                for j in 0..COLS {
+                    let mut col: bool = true;
+                    for i in 0..ROWS {
+                        if !f(&transposed.data[j][i]) {
+                            col = false;
+                        }
+                    }
+                    any_col.data[0][j] = col;    
+                }
+                AxisRes::Col(any_col)
+            }
+        }
+    }
 }
 
 impl<T, const ROWS: usize, const COLS: usize> ops::Add for Tensor<T, ROWS, COLS>
