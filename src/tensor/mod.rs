@@ -1,4 +1,4 @@
-use std::{iter::Sum, ops};
+use std::{fmt::Display, iter::{zip, Sum}, ops};
 use rand;
 
 
@@ -17,6 +17,11 @@ pub enum Axis {
 pub enum AxisRes<T, const ROWS: usize, const COLS: usize> {
     Row(Tensor<T, ROWS, 1>),
     Col(Tensor<T, 1, COLS>)
+}
+
+pub enum TensorIndex<const ROWS: usize, const COLS: usize> {
+    Scalar(usize),
+    Mask(Tensor<usize, 1, COLS>)
 }
 
 impl<T, const ROWS: usize, const COLS: usize> AxisRes<T, ROWS, COLS> {
@@ -295,6 +300,38 @@ impl<T, const ROWS: usize, const COLS: usize> Tensor<T, ROWS, COLS> {
                     any_col.data[0][j] = col;    
                 }
                 AxisRes::Col(any_col)
+            }
+        }
+    }
+    pub fn index_cols(&self, idx: TensorIndex<ROWS, COLS>) -> Result<Tensor<T, 1, COLS>, String>
+    where
+        T: Default + Copy + Display
+    {
+        let mut res: Tensor<T, 1, COLS> = Tensor::new();
+        match idx {
+            TensorIndex::Scalar(i) => {
+                if i > COLS {
+                    Err(format!(
+                        "Scalar index {} must be < COLS ({})", 
+                        i, COLS))
+                } else {
+                    for row_id in 0..self.data.len() {
+                        res.data[row_id][0] = self.data[row_id][i]
+                    }
+                    Ok(res)
+                }
+            }
+            TensorIndex::Mask(mask) => {
+                for (row_id, (row, row_index)) in zip(self.data, mask.data[0]).enumerate() {
+                    if row_index > COLS {
+                        return Err(format!(
+                            "Error on row {} in mask index.
+                            Index {} must be < COLS ({})", 
+                            row_id, row_index, COLS));
+                    }
+                    res.data[row_id][0] = row[row_index];
+                }
+                Ok(res)
             }
         }
     }
