@@ -147,6 +147,62 @@ impl<T, const ROWS: usize, const COLS: usize> Tensor<T, ROWS, COLS> {
         }
     }
 
+    pub fn apply_with<F>(&mut self, with: &Tensor<T, ROWS, COLS>, func: F)
+    where
+        F: Fn((&T, &T)) -> T
+    {
+        for i in 0..ROWS {
+            for j in 0..COLS {
+                self.data[i][j] = func((&self.data[i][j], &with.data[i][j]))
+            }
+        }
+    }
+
+    pub fn argmax(&self, axis: Axis) -> Option<AxisRes<T, ROWS, COLS>>
+    where 
+        T: Ord + Default + Copy,
+    {
+
+        match axis {
+            Axis::Row => {
+                let mut res: Tensor<T, ROWS, 1> = Tensor::new();
+                for row_id in 0..ROWS {
+                    let max_val = self.data[row_id].iter().max();
+                    match max_val {
+                        Some(&max) => { res.data[row_id][0] = max }
+                        None => { return None }
+                    };
+                }
+                Some(AxisRes::Row(res))
+            }
+            Axis::Col => {
+                let mut res: Tensor<T, 1, COLS> = Tensor::new();
+                let transposed = self.transpose();
+                for col_id in 0..COLS {
+                    let max_val = transposed.data[col_id].iter().max();
+                    match max_val {
+                        Some(&max) => { res.data[col_id][0] = max }
+                        None => { return None }
+                    };
+                }
+                Some(AxisRes::Col(res))
+            }
+        }
+    }
+
+    pub fn eq(&self, rhs: Tensor<T, ROWS, COLS>) -> Tensor<bool, ROWS, COLS>
+    where
+        T: PartialEq + Default + Copy
+    {
+        let mut res: Tensor<bool, ROWS, COLS> = Tensor::new();
+        for i in 0..ROWS {
+            for j in 0..COLS {
+                res.data[i][j] = self.data[i][j] == rhs.data[i][j];
+            }
+        }
+        res
+    }
+
     pub fn sum(&self) -> T
     where
         T: Sum + Copy,
@@ -501,5 +557,14 @@ where
         }
         
         result
+    }
+}
+
+impl<T, const ROWS: usize, const COLS: usize> PartialEq for Tensor<T, ROWS, COLS>
+where
+    T: PartialEq + std::cmp::PartialEq,  // Element type must support addition and be copyable
+{
+    fn eq(&self, rhs: &Tensor<T, ROWS, COLS>) -> bool {
+        self.data == rhs.data
     }
 }

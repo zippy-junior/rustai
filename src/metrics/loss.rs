@@ -1,5 +1,6 @@
 use crate::tensor::{Tensor, TensorIndex};
 
+
 pub struct CrossEntropyLoss<const BATCH_SIZE: usize, const N_INPUTS: usize> {}
 
 pub enum Targets<const BATCH_SIZE: usize, const N_INPUTS: usize>{
