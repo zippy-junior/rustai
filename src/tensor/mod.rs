@@ -1,4 +1,4 @@
-use num_traits::{cast::FromPrimitive, Num};
+use num_traits::{cast::FromPrimitive};
 use std::{fmt::Display, iter::{zip, Sum}, ops};
 use rand;
 
@@ -23,6 +23,10 @@ pub enum AxisRes<T, const ROWS: usize, const COLS: usize> {
 pub enum TensorIndex<const ROWS: usize, const COLS: usize> {
     Scalar(usize),
     Mask(Tensor<usize, ROWS, COLS>)
+}
+
+pub trait TensorConvert<B, const ROWS: usize, const COLS: usize> {
+    fn convert(self) -> Tensor<B, ROWS, COLS>;
 }
 
 impl<T, const ROWS: usize, const COLS: usize> AxisRes<T, ROWS, COLS> {
@@ -576,5 +580,23 @@ where
 {
     fn eq(&self, rhs: &Tensor<T, ROWS, COLS>) -> bool {
         self.data == rhs.data
+    }
+}
+
+impl<T, B, const ROWS: usize, const COLS: usize> TensorConvert<B, ROWS, COLS> for Tensor<T, ROWS, COLS>
+where
+    B: From<T> + Default + Copy,
+    T: Sized,
+{
+    fn convert(self) -> Tensor<B, ROWS, COLS> {
+        let mut new_data = [[B::default(); COLS]; ROWS];
+        
+        for (row_idx, row) in self.data.into_iter().enumerate() {
+            for (col_idx, value) in row.into_iter().enumerate() {
+                new_data[row_idx][col_idx] = B::from(value);
+            }
+        }
+        
+        Tensor { data: new_data }
     }
 }

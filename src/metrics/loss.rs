@@ -3,17 +3,12 @@ use crate::tensor::{Tensor, TensorIndex};
 
 pub struct CrossEntropyLoss<const BATCH_SIZE: usize, const N_INPUTS: usize> {}
 
-pub enum Targets<const BATCH_SIZE: usize, const N_INPUTS: usize>{
-    onehot(Tensor<usize, BATCH_SIZE, N_INPUTS>)
-    // categorical(Tensor<usize, 1, BATCH_SIZE>)
-}
-
 pub trait Loss<const BATCH_SIZE: usize, const N_INPUTS: usize>{
-    fn forward(&self, inputs: Tensor<f32, BATCH_SIZE, N_INPUTS>, targets: Targets<BATCH_SIZE, N_INPUTS>) -> f32;
+    fn forward(&self, inputs: Tensor<f32, BATCH_SIZE, N_INPUTS>, targets: super::Targets<BATCH_SIZE, N_INPUTS>) -> f32;
 }
 
 impl <const BATCH_SIZE: usize, const N_INPUTS: usize> Loss<BATCH_SIZE, N_INPUTS> for CrossEntropyLoss<BATCH_SIZE, N_INPUTS> {
-    fn forward(&self, inputs: Tensor<f32, BATCH_SIZE, N_INPUTS>, targets: Targets<BATCH_SIZE, N_INPUTS>) -> f32 {
+    fn forward(&self, inputs: Tensor<f32, BATCH_SIZE, N_INPUTS>, targets: super::Targets<BATCH_SIZE, N_INPUTS>) -> f32 {
         // TODO not clone the inputs for efficiency
         let mut clipped_inputs = inputs.clone();
         clipped_inputs.apply(|el| {
@@ -29,7 +24,7 @@ impl <const BATCH_SIZE: usize, const N_INPUTS: usize> Loss<BATCH_SIZE, N_INPUTS>
             // Targets::categorical(t) => {
                 
             // },
-            Targets::onehot(t) => {
+            super::Targets::onehot(t) => {
                 // TODO Process result
                 let mut masked_result = clipped_inputs.index_cols(TensorIndex::Mask(t)).expect("Error while indexing with onehot targets");
                 masked_result.apply(|el| -el.ln());
