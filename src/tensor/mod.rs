@@ -158,32 +158,42 @@ impl<T, const ROWS: usize, const COLS: usize> Tensor<T, ROWS, COLS> {
         }
     }
 
-    pub fn argmax(&self, axis: Axis) -> Option<AxisRes<T, ROWS, COLS>>
+    pub fn argmax(&self, axis: Axis) -> Option<AxisRes<usize, ROWS, COLS>>
     where 
-        T: Ord + Default + Copy,
+        T: PartialOrd + Default + Copy,
     {
-
+        if COLS == 0 || ROWS == 0 {
+            return None
+        }
         match axis {
             Axis::Row => {
-                let mut res: Tensor<T, ROWS, 1> = Tensor::new();
+                let mut res: Tensor<usize, ROWS, 1> = Tensor::new();
                 for row_id in 0..ROWS {
-                    let max_val = self.data[row_id].iter().max();
-                    match max_val {
-                        Some(&max) => { res.data[row_id][0] = max }
-                        None => { return None }
-                    };
+                    let mut max: T = self.data[row_id][0];
+                    let mut max_id: usize = 0;
+                    for col_id in 0..COLS {
+                        if self.data[row_id][col_id] > max {
+                            max = self.data[row_id][col_id];
+                            max_id = col_id;
+                        }
+                    }
+                    res.data[row_id][0] = max_id;
                 }
                 Some(AxisRes::Row(res))
             }
             Axis::Col => {
-                let mut res: Tensor<T, 1, COLS> = Tensor::new();
+                let mut res: Tensor<usize, 1, COLS> = Tensor::new();
                 let transposed = self.transpose();
                 for col_id in 0..COLS {
-                    let max_val = transposed.data[col_id].iter().max();
-                    match max_val {
-                        Some(&max) => { res.data[col_id][0] = max }
-                        None => { return None }
-                    };
+                    let mut max: T = transposed.data[col_id][0];
+                    let mut max_id: usize = 0;
+                    for row_id in 0..ROWS {
+                        if transposed.data[col_id][row_id] > max {
+                            max = transposed.data[col_id][row_id];
+                            max_id = row_id;
+                        }
+                    }
+                    res.data[col_id][0] = max_id;
                 }
                 Some(AxisRes::Col(res))
             }
