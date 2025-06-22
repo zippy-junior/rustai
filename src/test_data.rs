@@ -304,7 +304,7 @@ pub fn test_data() -> Tensor<f32, 300, 2> {
     [-0.05751158339121666, 0.9983448391091302]])
 }
 
-fn test_target() -> Tensor<i32, 300, 3> {
+pub fn test_targets() -> Tensor<usize, 300, 3> {
     Tensor::from_data([[1, 0, 0],
     [1, 0, 0],
     [1, 0, 0],

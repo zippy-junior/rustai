@@ -1,3 +1,4 @@
+use num_traits::{cast::FromPrimitive, Num};
 use std::{fmt::Display, iter::{zip, Sum}, ops};
 use rand;
 
@@ -21,7 +22,7 @@ pub enum AxisRes<T, const ROWS: usize, const COLS: usize> {
 
 pub enum TensorIndex<const ROWS: usize, const COLS: usize> {
     Scalar(usize),
-    Mask(Tensor<usize, 1, COLS>)
+    Mask(Tensor<usize, ROWS, COLS>)
 }
 
 impl<T, const ROWS: usize, const COLS: usize> AxisRes<T, ROWS, COLS> {
@@ -303,11 +304,11 @@ impl<T, const ROWS: usize, const COLS: usize> Tensor<T, ROWS, COLS> {
             }
         }
     }
-    pub fn index_cols(&self, idx: TensorIndex<ROWS, COLS>) -> Result<Tensor<T, 1, COLS>, String>
+    pub fn index_cols(&self, idx: TensorIndex<ROWS, COLS>) -> Result<Tensor<T, ROWS, 1>, String>
     where
         T: Default + Copy + Display
     {
-        let mut res: Tensor<T, 1, COLS> = Tensor::new();
+        let mut res: Tensor<T, ROWS, 1> = Tensor::new();
         match idx {
             TensorIndex::Scalar(i) => {
                 if i > COLS {
@@ -322,18 +323,21 @@ impl<T, const ROWS: usize, const COLS: usize> Tensor<T, ROWS, COLS> {
                 }
             }
             TensorIndex::Mask(mask) => {
-                for (row_id, (row, row_index)) in zip(self.data, mask.data[0]).enumerate() {
-                    if row_index > COLS {
-                        return Err(format!(
-                            "Error on row {} in mask index.
-                            Index {} must be < COLS ({})", 
-                            row_id, row_index, COLS));
-                    }
-                    res.data[row_id][0] = row[row_index];
+                for (row_id, (data_row, mask_row)) in zip(self.data, mask.data).enumerate() {
+                    let mask_row_index = mask_row.iter().position(|el| *el == 1).ok_or_else(|| "Invalid mask")?;
+                    res.data[row_id][0] = data_row[mask_row_index];
                 }
                 Ok(res)
             }
         }
+    }
+    pub fn mean(&self) -> T 
+    where 
+        T: Copy + Sum + ops::Div<Output = T> + FromPrimitive + Default,
+    {
+        let sum = self.sum();
+        let count = T::from_usize(ROWS * COLS).expect("Failed to convert usize to T");
+        sum / count
     }
 }
 

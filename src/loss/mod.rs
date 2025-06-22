@@ -1,25 +1,38 @@
-use rustai::tensor::Tensor;
+use crate::tensor::{Tensor, TensorIndex};
 
-pub struct CrossEntropyLoss<const N_INPUTS: usize, const BATCH_SIZE: usize> {}
+pub struct CrossEntropyLoss<const BATCH_SIZE: usize, const N_INPUTS: usize> {}
 
-pub enum Targets<const N_INPUTS: usize, const BATCH_SIZE: usize>{
-    categorical(Tensor<f32, N_INPUTS, BATCH_SIZE>),
-    onehot(Tensor<f32, 1, BATCH_SIZE>)
+pub enum Targets<const BATCH_SIZE: usize, const N_INPUTS: usize>{
+    onehot(Tensor<usize, BATCH_SIZE, N_INPUTS>)
+    // categorical(Tensor<usize, 1, BATCH_SIZE>)
 }
 
-pub trait Loss<const N_INPUTS: usize, const BATCH_SIZE: usize>{
-    fn forward(inputs: Tensor<f32, N_INPUTS, BATCH_SIZE>, targets: Targets<N_INPUTS, BATCH_SIZE>) {}
+pub trait Loss<const BATCH_SIZE: usize, const N_INPUTS: usize>{
+    fn forward(&self, inputs: Tensor<f32, BATCH_SIZE, N_INPUTS>, targets: Targets<BATCH_SIZE, N_INPUTS>) -> f32;
 }
 
-impl <const N_INPUTS: usize, const BATCH_SIZE: usize> Loss<N_INPUTS, BATCH_SIZE> for CrossEntropyLoss<N_INPUTS, BATCH_SIZE> {
-    fn forward(inputs: Tensor<f32, N_INPUTS, BATCH_SIZE>, targets: Targets<N_INPUTS, BATCH_SIZE>) {
+impl <const BATCH_SIZE: usize, const N_INPUTS: usize> Loss<BATCH_SIZE, N_INPUTS> for CrossEntropyLoss<BATCH_SIZE, N_INPUTS> {
+    fn forward(&self, inputs: Tensor<f32, BATCH_SIZE, N_INPUTS>, targets: Targets<BATCH_SIZE, N_INPUTS>) -> f32 {
+        // TODO not clone the inputs for efficiency
+        let mut clipped_inputs = inputs.clone();
+        clipped_inputs.apply(|el| {
+            if *el == 1 as f32 {
+                1 as f32 - f32::MIN
+            } else if *el == 0 as f32 {
+                0 as f32 + f32::MIN
+            } else {
+                *el
+            }
+        });
         match targets {
-            Targets::categorical(t) => {
+            // Targets::categorical(t) => {
                 
-                // let correct_confidences = inputs[ ​range​(​len​(softmax_outputs)), class_targets]
-            },
+            // },
             Targets::onehot(t) => {
-
+                // TODO Process result
+                let mut masked_result = clipped_inputs.index_cols(TensorIndex::Mask(t)).expect("Error while indexing with onehot targets");
+                masked_result.apply(|el| -el.ln());
+                masked_result.mean()
             }
         }
     }
